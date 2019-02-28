@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1.0, user-scalable=no">
+
+    <title>Carbon Registry</title>
+
+    <link href="https://cdn.datatables.net/1.10.19/css/jquery.dataTables.css" rel="stylesheet" type="text/css">
+    <link href="https://cdn.datatables.net/fixedheader/3.1.5/css/fixedHeader.dataTables.min.css" rel="stylesheet" type="text/css">
+
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
+    <script src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js" type="text/javascript" charset="utf8"></script>
+    <script src="https://cdn.datatables.net/fixedheader/3.1.5/js/dataTables.fixedHeader.min.js" type="text/javascript" charset="utf8"></script>
+
+    <style type="text/css">
+        #cache {
+            font-family: "Lucida Console", Monaco, monospace;
+        }
+    </style>
+
+    <script>
+        function LoadCache() {
+            console.log("Start load");
+            $('#cache').DataTable({
+                fixedHeader: {
+                    header: true,
+                    footer: true
+                },
+                "ajax": {
+                    "url": "/cache",
+                    "dataSrc": ""
+                },
+                "columns": [
+                    { "data": "source" },
+                    { "data": "metric" },
+                    { "data": "value" },
+                    { "data": "timestamp" },
+                    { "data": "date" },
+                    { "data": "count" }
+                ]
+            });
+            console.log("End load");
+        }
+
+        $(document).ready(LoadCache);
+
+    </script>
+</head>
+
+<body class="carbon-registry">
+
+<h1>Carbon Registry</h1>
+
+<table id="cache" class="display" style="width:100%">
+    <thead>
+    <tr>
+        <th>Source</th>
+        <th>Metric</th>
+        <th>Value</th>
+        <th>Timestamp</th>
+        <th>Date</th>
+        <th>Count</th>
+    </tr>
+    </thead>
+    <tfoot>
+    <tr>
+        <th>Source</th>
+        <th>Metric</th>
+        <th>Value</th>
+        <th>Timestamp</th>
+        <th>Date</th>
+        <th>Count</th>
+    </tr>
+    </tfoot>
+</table>
+</body>

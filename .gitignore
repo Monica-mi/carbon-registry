@@ -2,3 +2,5 @@
 *.exe
 *.json
 *.log
+glide.lock
+dist/

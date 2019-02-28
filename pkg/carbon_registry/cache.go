@@ -13,6 +13,7 @@ import (
 type CarbonCache struct {
 	Data            map[string]*CarbonMetric
 	MetricsReceived uint64
+	MetricsErrors   uint64
 	MetricsCount    uint64
 	FlushCount      uint64
 	FlushErrors     uint64
@@ -71,6 +72,7 @@ func (c *CarbonCache) Listen(channel syslog.LogPartsChannel) {
 		if messageLength >= 2 {
 			value, err = strconv.ParseFloat(messageFields[1], 64)
 			if err != nil {
+				c.MetricsErrors++
 				log.Warnf("Could not parse message: '%s' from: '%s' - %s", message, source, err)
 				continue
 			}
@@ -79,6 +81,7 @@ func (c *CarbonCache) Listen(channel syslog.LogPartsChannel) {
 		if messageLength >= 3 {
 			timestamp, err = strconv.ParseUint(messageFields[2], 10, 64)
 			if err != nil {
+				c.MetricsErrors++
 				log.Warnf("Could not parse message: '%s' from: '%s' - %s", message, source, err)
 				continue
 			}
@@ -145,6 +148,7 @@ func (c *CarbonCache) Purge() error {
 	c.Data = make(map[string]*CarbonMetric)
 	c.MetricsReceived = 0
 	c.MetricsCount = 0
+	c.MetricsErrors = 0
 	return nil
 }
 

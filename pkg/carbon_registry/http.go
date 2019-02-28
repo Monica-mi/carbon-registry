@@ -3,6 +3,7 @@ package carbon_registry
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 	"net/http"
 	"os"
@@ -16,11 +17,14 @@ type CarbonHTTP struct {
 	HostName     string
 	HTTPRequests uint64
 	HTTPErrors   uint64
+	Prefix       string
+	IndexFile	 string
 }
 
 type CarbonHTTPStatus struct {
 	Status         string `json:"status"`
 	MetricReceived uint64 `json:"metric_received"`
+	MetricsErrors  uint64 `json:"metrics_errors"`
 	MetricCount    uint64 `json:"metric_count"`
 	InstanceName   string `json:"instance_name"`
 	HostName       string `json:"host_name"`
@@ -61,8 +65,9 @@ func (c *CarbonHTTP) CacheHandler(writer http.ResponseWriter, request *http.Requ
 func (c *CarbonHTTP) GetStatus() *CarbonHTTPStatus {
 	return &CarbonHTTPStatus{
 		Status:         "OK",
-		MetricCount:    c.Cache.MetricsCount,
 		MetricReceived: c.Cache.MetricsReceived,
+		MetricsErrors:  c.Cache.MetricsErrors,
+		MetricCount:    c.Cache.MetricsCount,
 		InstanceName:   c.InstanceName,
 		HostName:       c.HostName,
 		FlushCount:     c.Cache.FlushCount,
@@ -93,6 +98,15 @@ func (c *CarbonHTTP) StatusHandler(writer http.ResponseWriter, request *http.Req
 	}
 }
 
+func (c *CarbonHTTP) IndexHandler(writer http.ResponseWriter, request *http.Request) {
+	if c.IndexFile == "status" {
+		c.StatusHandler(writer, request)
+		return
+	}
+	c.HTTPRequests++
+	http.ServeFile(writer, request, c.IndexFile)
+}
+
 func (c *CarbonHTTP) MetricsHandler(writer http.ResponseWriter, request *http.Request) {
 	c.HTTPRequests++
 
@@ -102,16 +116,18 @@ func (c *CarbonHTTP) MetricsHandler(writer http.ResponseWriter, request *http.Re
 	status := c.GetStatus()
 	text = fmt.Sprintf(`# Prometheus metrics for carbon-registry #
 carbon_registry_status{instance="%s",host="%s"} %d
-carbon_registry_metric_count{instance="%s",host="%s"} %d
 carbon_registry_metric_received{instance="%s",host="%s"} %d
+carbon_registry_metric_errors{instance="%s",host="%s"} %d
+carbon_registry_metric_count{instance="%s",host="%s"} %d
 carbon_registry_flush_count{instance="%s",host="%s"} %d
 carbon_registry_flush_errors{instance="%s",host="%s"} %d
 carbon_registry_http_requests{instance="%s",host="%s"} %d
 carbon_registry_http_errors{instance="%s",host="%s"} %d
 `,
 		status.HostName, status.InstanceName, 1,
-		status.HostName, status.InstanceName, status.MetricCount,
 		status.HostName, status.InstanceName, status.MetricReceived,
+		status.HostName, status.InstanceName, status.MetricsErrors,
+		status.HostName, status.InstanceName, status.MetricCount,
 		status.HostName, status.InstanceName, status.FlushCount,
 		status.HostName, status.InstanceName, status.FlushErrors,
 		status.HostName, status.InstanceName, status.HTTPRequests,
@@ -129,10 +145,16 @@ func (c *CarbonHTTP) Start() {
 	log.Infof("Start HTTP on %s:%d with instance: '%s' and host: '%s'", c.Host, c.Port, c.InstanceName, c.HostName)
 	var err error
 
-	http.HandleFunc("/", c.StatusHandler)
-	http.HandleFunc("/cache", c.CacheHandler)
-	http.HandleFunc("/metrics", c.MetricsHandler)
+	router := mux.NewRouter()
+	router.HandleFunc(c.Prefix, c.IndexHandler)
 
+	subrouter := router.PathPrefix(c.Prefix).Subrouter()
+	subrouter.HandleFunc("/", c.IndexHandler)
+	subrouter.HandleFunc("/cache", c.CacheHandler)
+	subrouter.HandleFunc("/status", c.StatusHandler)
+	subrouter.HandleFunc("/metrics", c.MetricsHandler)
+
+	http.Handle("/", router)
 	err = http.ListenAndServe(fmt.Sprintf("%s:%d", c.Host, c.Port), nil)
 	if err != nil {
 		log.Fatalf("Could not start HTTP server - %s", err)
@@ -157,6 +179,10 @@ func NewCarbonHTTP(cache *CarbonCache) *CarbonHTTP {
 
 	if carbonHTTP.InstanceName == "" {
 		carbonHTTP.InstanceName = "main"
+	}
+
+	if carbonHTTP.IndexFile == "" {
+		carbonHTTP.IndexFile = "status"
 	}
 
 	return carbonHTTP

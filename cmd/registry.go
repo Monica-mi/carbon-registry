@@ -49,6 +49,8 @@ func main() {
 	carbonHTTP.Port = uint16(cfg.Section("http").Key("port").MustInt(8084))
 	carbonHTTP.InstanceName = cfg.Section("http").Key("instance").MustString("main")
 	carbonHTTP.HostName = cfg.Section("http").Key("hostname").MustString("")
+	carbonHTTP.IndexFile = cfg.Section("http").Key("index").MustString("status")
+	carbonHTTP.Prefix = cfg.Section("http").Key("prefix").MustString("/")
 	go carbonHTTP.Start()
 
 	carbonFlush := carbon_registry.NewCarbonFlush(carbonCache)
