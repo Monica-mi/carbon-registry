@@ -44,7 +44,7 @@ func (c *CarbonFlush) OutputLog() {
 			c.Cache.FlushErrors ++
 			return
 		}
-		log.Infof("%s", text)
+		log.Printf("%s", text)
 	}
 }
 
@@ -57,7 +57,7 @@ func (c *CarbonFlush) OutputFile() {
 			return
 		}
 		filePath := time.Now().Format(c.FilePath)
-		log.Infof("Dump cache to file: '%s'", filePath)
+		log.Debugf("Dump cache to file: '%s'", filePath)
 
 		data := []byte(text + "\n")
 		err = ioutil.WriteFile(filePath, data, 0644)
