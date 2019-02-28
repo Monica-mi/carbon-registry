@@ -56,6 +56,16 @@ func (c *CarbonCache) Listen(channel syslog.LogPartsChannel) {
 		source = line["hostname"].(string)
 
 		messageFields = strings.Fields(message)
+		if len(messageFields) != 3 {
+			log.Printf("Skip invalid syslog message: '%s'\n", message)
+			continue
+		}
+
+		if source == "" {
+			log.Printf("Skip message without source: '%s'\n", message)
+			continue
+		}
+
 		metric = string(messageFields[0])
 		value, err = strconv.ParseFloat(messageFields[1], 64)
 		if err != nil {
