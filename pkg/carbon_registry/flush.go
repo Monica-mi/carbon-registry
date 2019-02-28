@@ -59,7 +59,7 @@ func (c *CarbonFlush) OutputFile() {
 		filePath := time.Now().Format(c.FilePath)
 		log.Infof("Dump cache to file: '%s'", filePath)
 
-		data := []byte(text)
+		data := []byte(text + "\n")
 		err = ioutil.WriteFile(filePath, data, 0644)
 		if err != nil {
 			log.Errorf("Could not write to file: '%s' - %s", filePath, err)
