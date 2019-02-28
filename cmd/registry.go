@@ -3,8 +3,8 @@ package main
 import (
 	"../pkg/carbon_registry"
 	"flag"
+	log "github.com/sirupsen/logrus"
 	"gopkg.in/ini.v1"
-	"log"
 	"time"
 )
 
@@ -21,9 +21,20 @@ func main() {
 	}
 	cfg, err := ini.Load(configFilePath)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Could not read the config file: '%s' - %s", configFilePath, err)
 	}
-	log.Printf("Start carbon-registry with config file: '%s'\n", configFilePath)
+	logLevelName := cfg.Section("log").Key("level").MustString("info")
+	logLevel, err := log.ParseLevel(logLevelName)
+	if err != nil {
+		log.Fatalf("Could not parse the log level: '%s' - %s", logLevelName, err)
+	}
+	log.SetLevel(logLevel)
+	formatter := new(log.TextFormatter)
+	formatter.TimestampFormat = "02-01-2006 15:04:05"
+	formatter.FullTimestamp = true
+	log.SetFormatter(formatter)
+
+	log.Infof("Start carbon-registry with the config file: '%s'", configFilePath)
 
 	carbonSyslog := carbon_registry.NewCarbonSyslog()
 	carbonSyslog.Host = cfg.Section("syslog").Key("host").MustString("0.0.0.0")
@@ -43,7 +54,7 @@ func main() {
 	carbonFlush := carbon_registry.NewCarbonFlush(carbonCache)
 	carbonFlush.Interval, err = time.ParseDuration(cfg.Section("flush").Key("interval").MustString("24h"))
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Could not parse the flush interval - %s", err)
 	}
 	carbonFlush.FileEnabled = cfg.Section("flush").Key("file").MustBool(true)
 	carbonFlush.FilePath = cfg.Section("flush").Key("path").MustString("graphite-metrics-2006-01-02_15-04-05.json")

@@ -2,8 +2,8 @@ package carbon_registry
 
 import (
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"gopkg.in/mcuadros/go-syslog.v2"
-	"log"
 )
 
 type CarbonSyslog struct {
@@ -14,7 +14,7 @@ type CarbonSyslog struct {
 }
 
 func (c *CarbonSyslog) Start() {
-	log.Printf("Start syslog on %s:%d", c.Host, c.Port)
+	log.Infof("Start syslog on %s:%d", c.Host, c.Port)
 
 	c.Channel = make(syslog.LogPartsChannel)
 	handler := syslog.NewChannelHandler(c.Channel)
@@ -25,12 +25,12 @@ func (c *CarbonSyslog) Start() {
 
 	err := c.Server.ListenUDP(fmt.Sprintf("%s:%d", c.Host, c.Port))
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Could not listen UDP - %s", err)
 	}
 
 	err = c.Server.Boot()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Could not start syslog server - %s", err)
 	}
 }
 

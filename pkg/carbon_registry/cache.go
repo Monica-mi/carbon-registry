@@ -2,8 +2,8 @@ package carbon_registry
 
 import (
 	"encoding/json"
+	log "github.com/sirupsen/logrus"
 	"gopkg.in/mcuadros/go-syslog.v2"
-	"log"
 	"sort"
 	"strconv"
 	"strings"
@@ -28,9 +28,10 @@ type CarbonMetric struct {
 }
 
 func (c *CarbonCache) Listen(channel syslog.LogPartsChannel) {
-	log.Println("Start cache listen")
+	log.Info("Start cache listener")
 	var message string
 	var messageFields []string
+	var messageLength int
 
 	var metric string
 	var value float64
@@ -44,7 +45,7 @@ func (c *CarbonCache) Listen(channel syslog.LogPartsChannel) {
 	err = c.Purge()
 	if err != nil {
 		if err != nil {
-			log.Fatal(err)
+			log.Fatalf("Could not purge cache - %s", err)
 		}
 	}
 
@@ -56,26 +57,31 @@ func (c *CarbonCache) Listen(channel syslog.LogPartsChannel) {
 		source = line["hostname"].(string)
 
 		messageFields = strings.Fields(message)
-		if len(messageFields) != 3 {
-			log.Printf("Skip invalid syslog message: '%s'\n", message)
-			continue
-		}
+		messageLength = len(messageFields)
 
 		if source == "" {
-			log.Printf("Skip message without source: '%s'\n", message)
-			continue
+			// this is internal metrics of carbon-c-relay
+			source = "127.0.0.1"
 		}
 
-		metric = string(messageFields[0])
-		value, err = strconv.ParseFloat(messageFields[1], 64)
-		if err != nil {
-			log.Println(err)
-			continue
+		if messageLength >= 1 {
+			metric = string(messageFields[0])
 		}
-		timestamp, err = strconv.ParseUint(messageFields[2], 10, 64)
-		if err != nil {
-			log.Println(err)
-			continue
+
+		if messageLength >= 2 {
+			value, err = strconv.ParseFloat(messageFields[1], 64)
+			if err != nil {
+				log.Warn("Could not parse value for metric: '%s' from: '%s' - %s", metric, source, err)
+				continue
+			}
+		}
+
+		if messageLength >= 3 {
+			timestamp, err = strconv.ParseUint(messageFields[2], 10, 64)
+			if err != nil {
+				log.Warn("Could not parse timestamp for metric: '%s' with value: %f from: '%s' - %s", metric, value, source, err)
+				continue
+			}
 		}
 
 		c.Receive(metric, source, date, value, timestamp)
@@ -83,7 +89,7 @@ func (c *CarbonCache) Listen(channel syslog.LogPartsChannel) {
 }
 
 func (c *CarbonCache) Receive(metric string, source string, date string, value float64, timestamp uint64) {
-	//log.Printf("Receive: %s %f %d from: %s at: %s\n", metric, value, timestamp, source, date)
+	log.Debugf("Receive: '%s %f %d' from: '%s' at: '%s'", metric, value, timestamp, source, date)
 
 	var record *CarbonMetric
 	var found bool
@@ -109,7 +115,7 @@ func (c *CarbonCache) Receive(metric string, source string, date string, value f
 	}
 }
 
-func (c *CarbonCache) Dump() (error, string) {
+func (c *CarbonCache) DumpPretty() (error, string) {
 	metrics := make([]*CarbonMetric, 0, len(c.Data))
 
 	for _, value := range c.Data {
@@ -121,6 +127,14 @@ func (c *CarbonCache) Dump() (error, string) {
 	})
 
 	jsonDump, err := json.MarshalIndent(metrics, "", "    ")
+	if err != nil {
+		return err, ""
+	}
+	return nil, string(jsonDump)
+}
+
+func (c *CarbonCache) DumpPlain() (error, string) {
+	jsonDump, err := json.Marshal(c.Data)
 	if err != nil {
 		return err, ""
 	}

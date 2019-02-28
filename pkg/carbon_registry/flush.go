@@ -1,8 +1,8 @@
 package carbon_registry
 
 import (
+	log "github.com/sirupsen/logrus"
 	"io/ioutil"
-	"log"
 	"time"
 )
 
@@ -16,7 +16,7 @@ type CarbonFlush struct {
 }
 
 func (c *CarbonFlush) Start() {
-	log.Printf("Start flush with interval: %s\n", c.Interval.String())
+	log.Infof("Start flush with interval: %s", c.Interval.String())
 	var err error
 	var text string
 
@@ -24,13 +24,7 @@ func (c *CarbonFlush) Start() {
 		time.Sleep(c.Interval)
 		c.Cache.FlushCount ++
 
-		err, text = c.Cache.Dump()
-		if err != nil {
-			log.Println(err)
-			c.Cache.FlushErrors ++
-			continue
-		}
-		c.OutputLog(text)
+		c.OutputLog()
 		c.OutputFile(text)
 		if c.PurgeEnabled {
 			err = c.Cache.Purge()
@@ -43,16 +37,22 @@ func (c *CarbonFlush) Start() {
 	}
 }
 
-func (c *CarbonFlush) OutputLog(text string) {
+func (c *CarbonFlush) OutputLog() {
 	if c.LogEnabled {
-		log.Printf("Dump cache:\n%s\n", text)
+		err, text := c.Cache.DumpPlain()
+		if err != nil {
+			log.Println(err)
+			c.Cache.FlushErrors ++
+			return
+		}
+		log.Infof("%s", text)
 	}
 }
 
 func (c *CarbonFlush) OutputFile(text string) {
 	if c.FileEnabled {
 		filePath := time.Now().Format(c.FilePath)
-		log.Printf("Dump cache to file: '%s'", filePath)
+		log.Infof("Dump cache to file: '%s'", filePath)
 
 		data := []byte(text)
 		err := ioutil.WriteFile(filePath, data, 0644)

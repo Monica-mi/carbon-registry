@@ -3,7 +3,7 @@ package carbon_registry
 import (
 	"encoding/json"
 	"fmt"
-	"log"
+	log "github.com/sirupsen/logrus"
 	"net/http"
 	"os"
 )
@@ -44,7 +44,7 @@ func (c *CarbonHTTP) CacheHandler(writer http.ResponseWriter, request *http.Requ
 	var err error
 	var text string
 
-	err, text = c.Cache.Dump()
+	err, text = c.Cache.DumpPretty()
 	if err != nil {
 		c.HTTPErrors++
 		http.Error(writer, err.Error(), http.StatusInternalServerError)
@@ -124,7 +124,7 @@ carbon_registry_http_errors{instance="%s",host="%s"} %d
 }
 
 func (c *CarbonHTTP) Start() {
-	log.Printf("Start HTTP on %s:%d with instance: %s and host: %s\n", c.Host, c.Port, c.InstanceName, c.HostName)
+	log.Infof("Start HTTP on %s:%d with instance: '%s' and host: '%s'", c.Host, c.Port, c.InstanceName, c.HostName)
 	var err error
 
 	http.HandleFunc("/", c.StatusHandler)
@@ -133,7 +133,7 @@ func (c *CarbonHTTP) Start() {
 
 	err = http.ListenAndServe(fmt.Sprintf("%s:%d", c.Host, c.Port), nil)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Could not start HTTP server - %s", err)
 	}
 }
 
@@ -149,7 +149,7 @@ func NewCarbonHTTP(cache *CarbonCache) *CarbonHTTP {
 	if carbonHTTP.HostName == "" {
 		carbonHTTP.HostName, err = os.Hostname()
 		if err != nil {
-			log.Fatal(err)
+			log.Fatalf("Could not get system hostname - %s", err)
 		}
 	}
 
