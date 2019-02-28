@@ -60,8 +60,8 @@ func (c *CarbonHTTP) CacheHandler(writer http.ResponseWriter, request *http.Requ
 func (c *CarbonHTTP) GetStatus() *CarbonHTTPStatus {
 	return &CarbonHTTPStatus{
 		Status:         "OK",
-		MetricCount:    uint64(len(c.Cache.Data)),
-		MetricReceived: uint64(c.Cache.MetricsReceived),
+		MetricCount:    c.Cache.MetricsCount,
+		MetricReceived: c.Cache.MetricsReceived,
 		InstanceName:   c.InstanceName,
 		HostName:       c.HostName,
 		FlushCount:     c.Cache.FlushCount,

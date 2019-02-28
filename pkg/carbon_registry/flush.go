@@ -45,7 +45,7 @@ func (c *CarbonFlush) Start() {
 
 func (c *CarbonFlush) OutputLog(text string) {
 	if c.LogEnabled {
-		log.Printf("Cache:\n%s\n", text)
+		log.Printf("Dump cache:\n%s\n", text)
 	}
 }
 

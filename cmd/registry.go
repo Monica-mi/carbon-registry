@@ -1,7 +1,7 @@
 package main
 
 import (
-	"../carbon-registry"
+	"../pkg/carbon_registry"
 	"flag"
 	"gopkg.in/ini.v1"
 	"log"

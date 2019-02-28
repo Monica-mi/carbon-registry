@@ -13,6 +13,7 @@ import (
 type CarbonCache struct {
 	Data            map[string]*CarbonMetric
 	MetricsReceived uint64
+	MetricsCount    uint64
 	FlushCount      uint64
 	FlushErrors     uint64
 }
@@ -94,6 +95,7 @@ func (c *CarbonCache) Receive(metric string, source string, date string, value f
 			Count:     1,
 		}
 		c.Data[metric] = record
+		c.MetricsCount++
 	}
 }
 
@@ -118,6 +120,7 @@ func (c *CarbonCache) Dump() (error, string) {
 func (c *CarbonCache) Purge() error {
 	c.Data = make(map[string]*CarbonMetric)
 	c.MetricsReceived = 0
+	c.MetricsCount = 0
 	return nil
 }
 
