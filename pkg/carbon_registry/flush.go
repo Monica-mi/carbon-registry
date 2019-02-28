@@ -50,7 +50,7 @@ func (c *CarbonFlush) OutputLog() {
 
 func (c *CarbonFlush) OutputFile() {
 	if c.FileEnabled {
-		err, text := c.Cache.DumpPlain()
+		err, text := c.Cache.DumpPretty()
 		if err != nil {
 			log.Errorf("Could not dump pretty JSON - %s", err)
 			c.Cache.FlushErrors ++
