@@ -71,7 +71,7 @@ func (c *CarbonCache) Listen(channel syslog.LogPartsChannel) {
 		if messageLength >= 2 {
 			value, err = strconv.ParseFloat(messageFields[1], 64)
 			if err != nil {
-				log.Warnf("Could not parse message: '%s' from: '%s' - %s", metric, source, err)
+				log.Warnf("Could not parse message: '%s' from: '%s' - %s", message, source, err)
 				continue
 			}
 		}
@@ -79,7 +79,7 @@ func (c *CarbonCache) Listen(channel syslog.LogPartsChannel) {
 		if messageLength >= 3 {
 			timestamp, err = strconv.ParseUint(messageFields[2], 10, 64)
 			if err != nil {
-				log.Warnf("Could not parse message: '%s' from: '%s' - %s", metric, source, err)
+				log.Warnf("Could not parse message: '%s' from: '%s' - %s", message, source, err)
 				continue
 			}
 		}
