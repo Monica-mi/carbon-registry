@@ -47,6 +47,7 @@ func (c *CarbonHTTP) CacheHandler(writer http.ResponseWriter, request *http.Requ
 	err, text = c.Cache.DumpPretty()
 	if err != nil {
 		c.HTTPErrors++
+		log.Errorf("Could not dump pretty JSON - %s", err)
 		http.Error(writer, err.Error(), http.StatusInternalServerError)
 	}
 
@@ -81,6 +82,7 @@ func (c *CarbonHTTP) StatusHandler(writer http.ResponseWriter, request *http.Req
 	err, text = status.Dump()
 	if err != nil {
 		c.HTTPErrors++
+		log.Errorf("Could not dump status - %s", err)
 		http.Error(writer, err.Error(), http.StatusInternalServerError)
 	}
 

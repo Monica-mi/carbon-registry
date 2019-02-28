@@ -18,14 +18,13 @@ type CarbonFlush struct {
 func (c *CarbonFlush) Start() {
 	log.Infof("Start flush with interval: %s", c.Interval.String())
 	var err error
-	var text string
 
 	for {
 		time.Sleep(c.Interval)
 		c.Cache.FlushCount ++
 
 		c.OutputLog()
-		c.OutputFile(text)
+		c.OutputFile()
 		if c.PurgeEnabled {
 			err = c.Cache.Purge()
 			if err != nil {
@@ -41,7 +40,7 @@ func (c *CarbonFlush) OutputLog() {
 	if c.LogEnabled {
 		err, text := c.Cache.DumpPlain()
 		if err != nil {
-			log.Println(err)
+			log.Errorf("Could not dump plain JSON - %s", err)
 			c.Cache.FlushErrors ++
 			return
 		}
@@ -49,15 +48,21 @@ func (c *CarbonFlush) OutputLog() {
 	}
 }
 
-func (c *CarbonFlush) OutputFile(text string) {
+func (c *CarbonFlush) OutputFile() {
 	if c.FileEnabled {
+		err, text := c.Cache.DumpPlain()
+		if err != nil {
+			log.Errorf("Could not dump pretty JSON - %s", err)
+			c.Cache.FlushErrors ++
+			return
+		}
 		filePath := time.Now().Format(c.FilePath)
 		log.Infof("Dump cache to file: '%s'", filePath)
 
 		data := []byte(text)
-		err := ioutil.WriteFile(filePath, data, 0644)
+		err = ioutil.WriteFile(filePath, data, 0644)
 		if err != nil {
-			log.Println(err)
+			log.Errorf("Could not write to file: '%s' - %s", filePath, err)
 			c.Cache.FlushErrors ++
 		}
 	}
