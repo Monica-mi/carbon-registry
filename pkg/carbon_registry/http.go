@@ -12,15 +12,15 @@ import (
 )
 
 type CarbonHTTP struct {
-	Cache        *CarbonCache
-	Host         string
-	Port         uint16
-	InstanceName string
-	HostName     string
-	HTTPRequests uint64
-	HTTPErrors   uint64
-	Prefix       string
-	IndexFile    string
+	Cache           *CarbonCache
+	Host            string
+	Port            uint16
+	InstanceName    string
+	HostName        string
+	HTTPRequests    uint64
+	HTTPErrors      uint64
+	Prefix          string
+	IndexFile       string
 	SearchParameter string
 }
 
@@ -96,22 +96,20 @@ func (c *CarbonHTTP) SearchHandler(writer http.ResponseWriter, request *http.Req
 		draw = 0
 	}
 
-	log.Debug(keys)
-
 	searchResponse := CarbonHTTPSearchResponse{
-		Draw: draw,
-		Data: make([]CarbonMetric, 0, 0),
+		Draw:            draw,
+		Data:            make([]CarbonMetric, 0, 0),
 		RecordsFiltered: 0,
-		RecordsTotal: c.Cache.MetricsCount,
-		Error: "",
+		RecordsTotal:    c.Cache.MetricsCount,
+		Error:           "",
 	}
 
-	if len(search) > 1 {
+	if len(search) >= 3 {
 		for _, record := range c.Cache.Data {
 			if strings.Contains(record.Metric, search) || strings.Contains(record.Source, search) {
 				searchResponse.Data = append(searchResponse.Data, *record)
+				searchResponse.RecordsFiltered++
 			}
-			searchResponse.RecordsFiltered++
 		}
 	}
 

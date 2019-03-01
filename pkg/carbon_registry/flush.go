@@ -21,7 +21,7 @@ func (c *CarbonFlush) Start() {
 
 	for {
 		time.Sleep(c.Interval)
-		c.Cache.FlushCount ++
+		c.Cache.FlushCount++
 
 		c.OutputLog()
 		c.OutputFile()
@@ -29,7 +29,7 @@ func (c *CarbonFlush) Start() {
 			err = c.Cache.Purge()
 			if err != nil {
 				log.Println(err)
-				c.Cache.FlushErrors ++
+				c.Cache.FlushErrors++
 				continue
 			}
 		}
@@ -41,7 +41,7 @@ func (c *CarbonFlush) OutputLog() {
 		err, text := c.Cache.DumpPlain()
 		if err != nil {
 			log.Errorf("Could not dump plain JSON - %s", err)
-			c.Cache.FlushErrors ++
+			c.Cache.FlushErrors++
 			return
 		}
 		log.Printf("%s", text)
@@ -53,7 +53,7 @@ func (c *CarbonFlush) OutputFile() {
 		err, text := c.Cache.DumpPretty()
 		if err != nil {
 			log.Errorf("Could not dump pretty JSON - %s", err)
-			c.Cache.FlushErrors ++
+			c.Cache.FlushErrors++
 			return
 		}
 		filePath := time.Now().Format(c.FilePath)
@@ -63,7 +63,7 @@ func (c *CarbonFlush) OutputFile() {
 		err = ioutil.WriteFile(filePath, data, 0644)
 		if err != nil {
 			log.Errorf("Could not write to file: '%s' - %s", filePath, err)
-			c.Cache.FlushErrors ++
+			c.Cache.FlushErrors++
 		}
 	}
 }
