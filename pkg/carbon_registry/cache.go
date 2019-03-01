@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/mcuadros/go-syslog.v2"
+	"math"
 	"sort"
 	"strconv"
 	"strings"
@@ -73,18 +74,27 @@ func (c *CarbonCache) Listen(channel syslog.LogPartsChannel) {
 			value, err = strconv.ParseFloat(messageFields[1], 64)
 			if err != nil {
 				c.MetricsErrors++
-				log.Warnf("Could not parse message: '%s' from: '%s' - %s", message, source, err)
+				log.Warnf("Could not parse message, incorrect value: '%s' from: '%s' - %s", message, source, err)
+				continue
+			}
+			if math.IsNaN(value) || math.IsInf(value, 0) || math.IsInf(value, 1)  {
+				log.Warnf("Could not parse message, incorrect value: '%s' from: '%s' - %s", message, source, err)
 				continue
 			}
 		}
 
 		if messageLength >= 3 {
-			timestamp, err = strconv.ParseUint(messageFields[2], 10, 64)
+			timestampFloat, err := strconv.ParseFloat(messageFields[2], 64)
 			if err != nil {
 				c.MetricsErrors++
-				log.Warnf("Could not parse message: '%s' from: '%s' - %s", message, source, err)
+				log.Warnf("Could not parse message, incorrect timestamp: '%s' from: '%s' - %s", message, source, err)
 				continue
 			}
+			if math.IsNaN(timestampFloat) || math.IsInf(timestampFloat, 0) || math.IsInf(timestampFloat, 1)  {
+				log.Warnf("Could not parse message, incorrect timestamp: '%s' from: '%s' - %s", message, source, err)
+				continue
+			}
+			timestamp = uint64(math.Abs(math.Round(timestampFloat)))
 		}
 
 		c.Receive(metric, source, date, value, timestamp)
