@@ -77,8 +77,8 @@ func (c *CarbonCache) Listen(channel syslog.LogPartsChannel) {
 				log.Warnf("Could not parse message, incorrect value: '%s' from: '%s' - %s", message, source, err)
 				continue
 			}
-			if math.IsNaN(value) || math.IsInf(value, 0) || math.IsInf(value, 1)  {
-				log.Warnf("Could not parse message, incorrect value: '%s' from: '%s' - %s", message, source, err)
+			if math.IsNaN(value) || math.IsInf(value, 0) {
+				log.Warnf("Could not parse message, incorrect value: '%s' from: '%s'", message, source)
 				continue
 			}
 		}
@@ -90,8 +90,8 @@ func (c *CarbonCache) Listen(channel syslog.LogPartsChannel) {
 				log.Warnf("Could not parse message, incorrect timestamp: '%s' from: '%s' - %s", message, source, err)
 				continue
 			}
-			if math.IsNaN(timestampFloat) || math.IsInf(timestampFloat, 0) || math.IsInf(timestampFloat, 1)  {
-				log.Warnf("Could not parse message, incorrect timestamp: '%s' from: '%s' - %s", message, source, err)
+			if math.IsNaN(timestampFloat) || math.IsInf(timestampFloat, 0) {
+				log.Warnf("Could not parse message, incorrect timestamp: '%s' from: '%s'", message, source)
 				continue
 			}
 			timestamp = uint64(math.Abs(math.Round(timestampFloat)))
