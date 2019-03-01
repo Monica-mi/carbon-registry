@@ -7,6 +7,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"net/http"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -33,7 +34,7 @@ type CarbonHTTPSearchResponse struct {
 }
 
 func (c *CarbonHTTPSearchResponse) Dump() (error, string) {
-	jsonDump, err := json.MarshalIndent(c, "", "    ")
+	jsonDump, err := json.Marshal(c)
 	if err != nil {
 		return err, ""
 	}
@@ -112,6 +113,10 @@ func (c *CarbonHTTP) SearchHandler(writer http.ResponseWriter, request *http.Req
 			}
 		}
 	}
+
+	sort.Slice(searchResponse.Data, func(i, j int) bool {
+		return searchResponse.Data[i].Metric < searchResponse.Data[j].Metric
+	})
 
 	err, responseText = searchResponse.Dump()
 	if err != nil {

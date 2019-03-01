@@ -3,4 +3,7 @@
 *.json
 *.log
 glide.lock
+
 dist/
+cmd/registry
+cmd/udp
