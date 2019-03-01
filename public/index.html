@@ -23,13 +23,15 @@
         function LoadCache() {
             console.log("Start load");
             $('#cache').DataTable({
-                fixedHeader: {
+                "serverSide": true,
+                "processing": true,
+                "fixedHeader": {
                     header: true,
                     footer: true
                 },
                 "ajax": {
-                    "url": "/cache",
-                    "dataSrc": ""
+                    "url": "/search",
+                    "dataSrc": "data"
                 },
                 "columns": [
                     { "data": "source" },

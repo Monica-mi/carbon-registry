@@ -51,6 +51,7 @@ func main() {
 	carbonHTTP.HostName = cfg.Section("http").Key("hostname").MustString("")
 	carbonHTTP.IndexFile = cfg.Section("http").Key("index").MustString("status")
 	carbonHTTP.Prefix = cfg.Section("http").Key("prefix").MustString("/")
+	carbonHTTP.SearchParameter = cfg.Section("http").Key("search_parameter").MustString("search[value]")
 	go carbonHTTP.Start()
 
 	carbonFlush := carbon_registry.NewCarbonFlush(carbonCache)

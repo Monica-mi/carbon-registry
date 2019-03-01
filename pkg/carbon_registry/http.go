@@ -7,6 +7,8 @@ import (
 	log "github.com/sirupsen/logrus"
 	"net/http"
 	"os"
+	"strconv"
+	"strings"
 )
 
 type CarbonHTTP struct {
@@ -18,7 +20,24 @@ type CarbonHTTP struct {
 	HTTPRequests uint64
 	HTTPErrors   uint64
 	Prefix       string
-	IndexFile	 string
+	IndexFile    string
+	SearchParameter string
+}
+
+type CarbonHTTPSearchResponse struct {
+	Draw            int            `json:"draw"`
+	RecordsTotal    uint64         `json:"recordsTotal"`
+	RecordsFiltered uint64         `json:"recordsFiltered"`
+	Data            []CarbonMetric `json:"data"`
+	Error           string         `json:"error"`
+}
+
+func (c *CarbonHTTPSearchResponse) Dump() (error, string) {
+	jsonDump, err := json.MarshalIndent(c, "", "    ")
+	if err != nil {
+		return err, ""
+	}
+	return nil, string(jsonDump)
 }
 
 type CarbonHTTPStatus struct {
@@ -56,6 +75,54 @@ func (c *CarbonHTTP) CacheHandler(writer http.ResponseWriter, request *http.Requ
 	}
 
 	_, err = fmt.Fprintln(writer, text)
+	if err != nil {
+		c.HTTPErrors++
+		http.Error(writer, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func (c *CarbonHTTP) SearchHandler(writer http.ResponseWriter, request *http.Request) {
+	c.HTTPRequests++
+
+	var err error
+	var search string
+	var draw int
+	var responseText string
+
+	keys := request.URL.Query()
+	search = keys.Get(c.SearchParameter)
+	draw, err = strconv.Atoi(keys.Get("draw"))
+	if err != nil {
+		draw = 0
+	}
+
+	log.Debug(keys)
+
+	searchResponse := CarbonHTTPSearchResponse{
+		Draw: draw,
+		Data: make([]CarbonMetric, 0, 0),
+		RecordsFiltered: 0,
+		RecordsTotal: c.Cache.MetricsCount,
+		Error: "",
+	}
+
+	if len(search) > 1 {
+		for _, record := range c.Cache.Data {
+			if strings.Contains(record.Metric, search) || strings.Contains(record.Source, search) {
+				searchResponse.Data = append(searchResponse.Data, *record)
+			}
+			searchResponse.RecordsFiltered++
+		}
+	}
+
+	err, responseText = searchResponse.Dump()
+	if err != nil {
+		c.HTTPErrors++
+		log.Errorf("Could not dump pretty JSON - %s", err)
+		http.Error(writer, err.Error(), http.StatusInternalServerError)
+	}
+
+	_, err = fmt.Fprintln(writer, responseText)
 	if err != nil {
 		c.HTTPErrors++
 		http.Error(writer, err.Error(), http.StatusInternalServerError)
@@ -153,6 +220,7 @@ func (c *CarbonHTTP) Start() {
 	subrouter.HandleFunc("/cache", c.CacheHandler)
 	subrouter.HandleFunc("/status", c.StatusHandler)
 	subrouter.HandleFunc("/metrics", c.MetricsHandler)
+	subrouter.HandleFunc("/search", c.SearchHandler)
 
 	http.Handle("/", router)
 	err = http.ListenAndServe(fmt.Sprintf("%s:%d", c.Host, c.Port), nil)
