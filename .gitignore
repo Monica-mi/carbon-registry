@@ -1,6 +1,7 @@
 .idea
 *.exe
 *.json
+*.json.gz
 *.log
 glide.lock
 

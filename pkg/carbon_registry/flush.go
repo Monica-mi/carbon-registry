@@ -1,8 +1,9 @@
 package carbon_registry
 
 import (
+	"compress/gzip"
 	log "github.com/sirupsen/logrus"
-	"io/ioutil"
+	"os"
 	"time"
 )
 
@@ -59,11 +60,27 @@ func (c *CarbonFlush) OutputFile() {
 		filePath := time.Now().Format(c.FilePath)
 		log.Debugf("Dump cache to file: '%s'", filePath)
 
-		data := []byte(text + "\n")
-		err = ioutil.WriteFile(filePath, data, 0644)
+		fileWriter, err := os.Create(filePath)
+		if err != nil {
+			log.Errorf("Could not create file: '%s' - %s", filePath, err)
+			return
+		}
+		defer fileWriter.Close()
+
+		gzipWriter := gzip.NewWriter(fileWriter)
+		defer gzipWriter.Close()
+
+		_, err = gzipWriter.Write([]byte(text + "\n"))
 		if err != nil {
 			log.Errorf("Could not write to file: '%s' - %s", filePath, err)
 			c.Cache.FlushErrors++
+			return
+		}
+		err = gzipWriter.Flush()
+		if err != nil {
+			log.Errorf("Could not flush to file: '%s' - %s", filePath, err)
+			c.Cache.FlushErrors++
+			return
 		}
 	}
 }
@@ -73,7 +90,7 @@ func NewCarbonFlush(cache *CarbonCache) *CarbonFlush {
 		Cache:        cache,
 		Interval:     time.Hour * 24,
 		FileEnabled:  true,
-		FilePath:     "graphite-metrics-2006-01-02_15-04-05.json",
+		FilePath:     "graphite-metrics-2006-01-02_15-04-05.json.gz",
 		LogEnabled:   true,
 		PurgeEnabled: false,
 	}
